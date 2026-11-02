@@ -140,7 +140,7 @@ end
 
 #MORTON CODING
 #magic bit dilation
-function splitBy3(x::UInt64)
+function splitBy2(x::UInt64)
     x &= 0x1fffff
     x = (x | (x << 32)) & UInt64(0x1f00000000ffff)
     x = (x | (x << 16)) & UInt64(0x1f0000ff0000ff)
@@ -151,9 +151,9 @@ function splitBy3(x::UInt64)
 end
 
 function morton(x,y,z)
-    xs=splitBy3(x)
-    ys=splitBy3(y)
-    zs=splitBy3(z)
+    xs=splitBy2(x)
+    ys=splitBy2(y)
+    zs=splitBy2(z)
     m=xs | (ys<<1) | (zs<<2)
     return m
 end
