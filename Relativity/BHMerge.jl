@@ -16,9 +16,6 @@ rho0=0.1 #target density
 k=0.001 #density->pressure
 mu=0.1 #viscosity
 
-accreted=0
-
-
 bhPos=CUDA.zeros(Float32, 2,3)
 bhVel=CUDA.zeros(Float32, 2,3)
 
@@ -446,20 +443,21 @@ end
 
 #smoothing kernel, (x-h)^2
 function W(x,h)
-    y=Float32((x-h)^2)
-    V=Float32(2pi*h^5 /15)
-    y=y/V 
-    return y
+    y=Float32(x^3 /3 - h*x^2 /2 + h^3 /6)
+    V=Float32(pi^2 * h^5 /6)
+    return y/V
 end
 #derivative
 function dW(x,h)
-    y=Float32(15(x-h)/(pi*h^5))
-    return y
+    y=Float32(x*(x-h))
+    V=Float32(pi^2 * h^5 /6)
+    return y/V
 end
 #second derivative
 function d2W(x,h)
-    y=Float32(15/(pi*h^5))
-    return y
+    y=Float32(2x-h)
+    V=Float32(pi^2 * h^5 /6)
+    return y/V
 end
 
 stackSize=256
