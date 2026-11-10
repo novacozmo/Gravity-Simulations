@@ -2,8 +2,9 @@ using CUDA
 using GLMakie
 import AcceleratedKernels as AK
 
+graphs=false
 
-n=262_144 #divisible by 256
+n=131_072 #divisible by 256
 a0=35
 mparticle=4
 
@@ -54,8 +55,8 @@ end
 function posInitialize!(pos,bhPos)
     i=(blockIdx().x - 1)*blockDim().x + threadIdx().x
     mDiskIR=7
-    mDiskW=2
-    mDiskH=0.25
+    mDiskW=6
+    mDiskH=0.6
     cDiskIR=50
     cDiskW=100
     cDiskH=15
@@ -737,95 +738,94 @@ Label(fig[2, 1], statsText,
     tellwidth = false
 )
 
+if graphs
+    times= Observable(Float64[])
+    rActual= Observable(Float64[])
+    rTheory= Observable(Float64[])
+    rDiff= Observable(Float64[])
+    drs= Observable(Float64[])
+    hs= Observable(Float64[])
 
-times= Observable(Float64[])
-rActual= Observable(Float64[])
-rTheory= Observable(Float64[])
-rDiff= Observable(Float64[])
-drs= Observable(Float64[])
-hs= Observable(Float64[])
+    diag = fig[1, 2] = GridLayout()
 
-# Put the diagnostics to the right of your existing plot
-# Change column 2 to whichever column is free.
-diag = fig[1, 2] = GridLayout()
+    axR = Axis(diag[1, 1],
+        title = "BH Separation",
+        xlabel = "Simulation time",
+        ylabel = "Separation")
 
-axR = Axis(diag[1, 1],
-    title = "BH Separation",
-    xlabel = "Simulation time",
-    ylabel = "Separation")
+    axDiff = Axis(diag[2, 1],
+        title = "Separation Discrepancy",
+        xlabel = "Simulation time",
+        ylabel = "Actual - predicted")
 
-axDiff = Axis(diag[2, 1],
-    title = "Separation Discrepancy",
-    xlabel = "Simulation time",
-    ylabel = "Actual - predicted")
+    axDr = Axis(diag[3, 1],
+        title = "Radial Velocity",
+        xlabel = "Simulation time",
+        ylabel = "dr/dt")
 
-axDr = Axis(diag[3, 1],
-    title = "Radial Velocity",
-    xlabel = "Simulation time",
-    ylabel = "dr/dt")
+    axH = Axis(diag[4, 1],
+        title = "Angular Momentum",
+        xlabel = "Simulation time",
+        ylabel = "h")
 
-axH = Axis(diag[4, 1],
-    title = "Angular Momentum",
-    xlabel = "Simulation time",
-    ylabel = "h")
+    axR.xticks = Makie.WilkinsonTicks(5)
+    axR.yticks = Makie.WilkinsonTicks(5)
 
-axR.xticks = Makie.WilkinsonTicks(5)
-axR.yticks = Makie.WilkinsonTicks(5)
+    axDr.xticks = Makie.WilkinsonTicks(5)
+    axDr.yticks = Makie.WilkinsonTicks(5)
 
-axDr.xticks = Makie.WilkinsonTicks(5)
-axDr.yticks = Makie.WilkinsonTicks(5)
+    axDiff.xticks = Makie.WilkinsonTicks(5)
+    axDiff.yticks = Makie.WilkinsonTicks(5)
 
-axDiff.xticks = Makie.WilkinsonTicks(5)
-axDiff.yticks = Makie.WilkinsonTicks(5)
+    axH.xticks = Makie.WilkinsonTicks(5)
+    axH.yticks = Makie.WilkinsonTicks(5)
 
-axH.xticks = Makie.WilkinsonTicks(5)
-axH.yticks = Makie.WilkinsonTicks(5)
+    axR.xticklabelcolor = :white
+    axR.yticklabelcolor = :white
+    axDr.xticklabelcolor = :white
+    axDr.yticklabelcolor = :white
+    axDiff.xticklabelcolor = :white
+    axDiff.yticklabelcolor = :white
+    axH.xticklabelcolor = :white
+    axH.yticklabelcolor = :white
 
-axR.xticklabelcolor = :white
-axR.yticklabelcolor = :white
-axDr.xticklabelcolor = :white
-axDr.yticklabelcolor = :white
-axDiff.xticklabelcolor = :white
-axDiff.yticklabelcolor = :white
-axH.xticklabelcolor = :white
-axH.yticklabelcolor = :white
+    axR.xtickcolor = :white
+    axR.ytickcolor = :white
+    axDr.xtickcolor = :white
+    axDr.ytickcolor = :white
+    axDiff.xtickcolor = :white
+    axDiff.ytickcolor = :white
+    axH.xtickcolor = :white
+    axH.ytickcolor = :white
 
-axR.xtickcolor = :white
-axR.ytickcolor = :white
-axDr.xtickcolor = :white
-axDr.ytickcolor = :white
-axDiff.xtickcolor = :white
-axDiff.ytickcolor = :white
-axH.xtickcolor = :white
-axH.ytickcolor = :white
-
-axR.xlabelcolor = :white
-axR.ylabelcolor = :white
-axDr.xlabelcolor = :white
-axDr.ylabelcolor = :white
-axDiff.xlabelcolor = :white
-axDiff.ylabelcolor = :white
-axH.xlabelcolor = :white
-axH.ylabelcolor = :white
+    axR.xlabelcolor = :white
+    axR.ylabelcolor = :white
+    axDr.xlabelcolor = :white
+    axDr.ylabelcolor = :white
+    axDiff.xlabelcolor = :white
+    axDiff.ylabelcolor = :white
+    axH.xlabelcolor = :white
+    axH.ylabelcolor = :white
 
 
-# Plot each variable
-lines!(axR, times, rActual, color = :cyan, label = "Simulation")
-lines!(axR, times, rTheory, color = :orange,
-       linestyle = :dash, label = "Quadrupole")
-axislegend(axR)
+    # Plot each variable
+    lines!(axR, times, rActual, color = :cyan, label = "Simulation")
+    lines!(axR, times, rTheory, color = :orange,
+        linestyle = :dash, label = "Quadrupole")
+    axislegend(axR)
 
-lines!(axDiff, times, rDiff, color = :red)
-hlines!(axDiff, [0.0], color = :gray, linestyle = :dash)
+    lines!(axDiff, times, rDiff, color = :red)
+    hlines!(axDiff, [0.0], color = :gray, linestyle = :dash)
 
-lines!(axDr, times, drs, color = :lime)
-hlines!(axDr, [0.0], color = :gray, linestyle = :dash)
+    lines!(axDr, times, drs, color = :lime)
+    hlines!(axDr, [0.0], color = :gray, linestyle = :dash)
 
-lines!(axH, times, hs, color = :yellow)
+    lines!(axH, times, hs, color = :yellow)
 
-# Give the main simulation plot more space
-colsize!(fig.layout, 1, Relative(0.65))
-colsize!(fig.layout, 2, Relative(0.35))
+    colsize!(fig.layout, 1, Relative(0.65))
+    colsize!(fig.layout, 2, Relative(0.35))
+end
+
 
 rold=a0
 frame=0
@@ -867,30 +867,32 @@ while true
                         dr:        $(round(dr,digits=3))
                         Frame:        $(frame)
                         """
-            push!(times[], frame)
-            push!(rActual[], r)
-            push!(rTheory[], LOE)
-            push!(rDiff[], r-LOE)
-            push!(drs[], dr)
-            push!(hs[], h)
-            times[]   = copy(times[])
-            rActual[] = copy(rActual[])
-            rTheory[] = copy(rTheory[])
-            rDiff[]   = copy(rDiff[])
-            drs[]   = copy(drs[])
-            hs[]      = copy(hs[])
-            notify(times)
-            notify(rActual)
-            notify(rTheory)
-            notify(rDiff)
-            notify(drs)
-            notify(hs)
-            println("Graph samples: ", length(times[]))
-            println("Latest separation: ", rActual[][end])
-            autolimits!(axR)
-            autolimits!(axDiff)
-            autolimits!(axDr)
-            autolimits!(axH)
+            if graphs
+                push!(times[], frame)
+                push!(rActual[], r)
+                push!(rTheory[], LOE)
+                push!(rDiff[], r-LOE)
+                push!(drs[], dr)
+                push!(hs[], h)
+                times[]   = copy(times[])
+                rActual[] = copy(rActual[])
+                rTheory[] = copy(rTheory[])
+                rDiff[]   = copy(rDiff[])
+                drs[]   = copy(drs[])
+                hs[]      = copy(hs[])
+                notify(times)
+                notify(rActual)
+                notify(rTheory)
+                notify(rDiff)
+                notify(drs)
+                notify(hs)
+                println("Graph samples: ", length(times[]))
+                println("Latest separation: ", rActual[][end])
+                autolimits!(axR)
+                autolimits!(axDiff)
+                autolimits!(axDr)
+                autolimits!(axH)
+            end
         end
 
     end    
