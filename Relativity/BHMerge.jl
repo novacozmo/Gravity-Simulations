@@ -642,6 +642,10 @@ end
 
 idx = 1:16:n
 #       ^ needs to be odd, otherwise it only draws one disk
+GLMakie.activate!(
+    oit = true,
+    transparency_weight_scale = 10f0
+)
 
 function getpoints(pos, active, idx)
     p = Array(pos[idx, :])
@@ -716,7 +720,8 @@ ax = Axis3(fig[1,1],
 limits!(ax, -a0, a0, -a0, a0, -a0, a0)
 
 bhPoints = Observable(getbhpoints(bhPos))
-scatter!(ax, points, color=colors, colormap=:plasma, colorrange=(0.0,1.0),markersize=5)
+#                    color=colors,colormap=:plasma
+scatter!(ax, points, color=:white, colorrange=(0.0,1.0),markersize=5,glowcolor = (:orange, 0.05),glowwidth = 7,transparency = true)
 scatter!(ax, bhPoints, color=[:cyan, :red], markersize=20)
 bhText = Observable("")
 
